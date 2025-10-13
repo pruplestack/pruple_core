@@ -2,7 +2,7 @@
 import os
 import yaml
 
-def find_and_parse_tagmap(file_path: str = "tag_map.yaml") -> dict | None:
+def find_and_parse_tagmap(file_path: str = str(os.path.join(os.path.dirname(__file__), "tag_map.yaml"))) -> dict | None:
     """
     Locate and parse a YAML tag map file.
 
@@ -21,7 +21,7 @@ def find_and_parse_tagmap(file_path: str = "tag_map.yaml") -> dict | None:
         return None
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             data: dict = yaml.safe_load(f)
     except yaml.YAMLError as e:
         print(f"[!] YAML parsing error in {file_path}: {e}")
