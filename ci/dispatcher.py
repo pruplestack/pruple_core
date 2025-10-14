@@ -62,7 +62,30 @@ def fill_repo(repo_name: str, file_repo_map: Dict[str, List[str]], vault_root: s
     subprocess.run(["git", "commit", "-m", "Automated dispatch update"], cwd=repo_path)
 
     print(f"[i] {repo_name}: {len(copied_files)} files mirrored.")
+def create_github_repo(repo_name: str, pat: str):
+    """
+    Create a GitHub repository using GitHub CLI.
 
+    Parameters
+    ----------
+    repo_name : str
+        Name of the repository to create
+    pat : str
+        Personal Access Token with repo creation permissions
+    """
+    env = os.environ.copy()
+    env["GITHUB_TOKEN"] = pat
+    result = subprocess.run(
+        ["gh", "repo", "create", repo_name, "--public", "--confirm"],
+        env=env,
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        print(f"[!] Failed to create GitHub repo {repo_name}: {result.stderr.strip()}")
+        return False
+    print(f"[✓] GitHub repo {repo_name} created successfully.")
+    return True
 def dispatch(vault_root: str = "."):
     """
     Orchestrate full dispatch process:
