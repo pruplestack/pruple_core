@@ -69,7 +69,25 @@ def list_tags_in_file(file_path: str, known_tags: dict[str, list[str]]) -> list[
     except Exception as e:
         print(f"[!] Error reading {file_path}: {e}")
     return sorted(found)
-
+def build_file_repo_dict_map(base_dir: str, tag_to_repo: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    """
+    Scan all files in base_dir and map each file to the list of repositories
+    it should be included in based on its tags.
+    """
+    file_repo_map: Dict[str, List[str]] = {}
+    for root, _, files in os.walk(base_dir):
+        for file in files:
+            if file == os.path.basename(__file__):
+                continue  # Skip the parser script itself
+            file_path = os.path.join(root, file)
+            tags = list_tags_in_file(file_path, tag_to_repo)
+            target_repos = set()
+            for tag in tags:
+                if tag in tag_to_repo:
+                    target_repos.update(tag_to_repo[tag])
+            if target_repos:
+                file_repo_map[file_path] = sorted(target_repos)
+    return file_repo_map
 
 # -----------------------------------------------------------
 # 3. CLI / Debug Entry Point
@@ -84,4 +102,4 @@ if __name__ == "__main__":
     print("\nTag → Repo mapping:")
     for tag, repos in tag_to_repo.items():
         print(f"  {tag}: {repos}")
-    
+
