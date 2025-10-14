@@ -85,7 +85,8 @@ def dispatch(vault_root: str = "."):
 
     # 2. Build file->repo mapping
     print("[i] Building file-to-repo mapping...")
-    file_repo_map = build_file_repo_dict_map(vault_root)
+    file_repo_map = build_file_repo_dict_map(vault_root, tag_to_repo)
+
     print(f"[i] Found {len(file_repo_map)} tagged files.")
 
     # 3. Process each repo
