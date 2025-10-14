@@ -8,7 +8,7 @@ import os
 import subprocess
 from typing import Dict, List
 import sys , shutil
-from parser import file_has_tag, list_tags_in_file, parse_tag_map, build_file_repo_dict_map, build_tag_to_repo_map
+from parser import *
 
 # -----------------------------------------------------------
 # for each repo : create a git repository with all the files taged for that repository in it 
