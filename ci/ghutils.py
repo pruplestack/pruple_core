@@ -50,7 +50,7 @@ def create_if_not_exists(repo: str, public: bool = True, create_in_user_space: b
         return False
 
     visibility = "--public" if public else "--private"
-    run_gh("repo", "create", repo, visibility, "--confirm")
+    run_gh("repo", "create", repo, visibility, "--yes")
     set_description(repo, "Created by PRUPLE's ghutils.py")
     return True
 def ensure_pruple_managed(repo: str) -> None:
