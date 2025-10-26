@@ -82,7 +82,12 @@ def build_file_repo_dict_map(base_dir: str, tag_to_repo: Dict[str, List[str]]) -
             #skip hidden files , especially .git
             if file.startswith('.'):
                 continue
-            
+            #also skip files in .git directories
+            if '.git' in root.split(os.sep):
+                continue
+            #and binary files (simple heuristic)
+            if not file.lower().endswith(('.txt', '.md', '.py', '.yaml', '.yml', '.json', '.cfg', '.ini', '.csv', '.log', '.xml', '.html', '.htm', '.js', '.css')):
+                continue
             file_path = os.path.join(root, file)
             try:
                 tags = list_tags_in_file(file_path, tag_to_repo)
