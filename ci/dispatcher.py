@@ -1,133 +1,84 @@
-#dispatcher.py
-#this program's purpose 
-#is to use the tagmap utility
-#to build a file->repo mapping 
-#then build the content of each repo
-#finally dispatch each file to its repo with --mirror
+# dispatcher.py
+
 import os
 import subprocess
+import shutil
+import sys
 from typing import Dict, List
-import sys , shutil
-from parser import *
 
-# -----------------------------------------------------------
-# for each repo : create a git repository with all the files taged for that repository in it 
-def create_git_repo(url):
-    #git init
-    repo_name = url.split("/")[-1].replace(".git", "")
+from parser import parse_tag_map, build_file_repo_dict_map
+from ghutils import create_if_not_exists, ensure_pruple_managed, push_mirror
+
+
+def create_local_repo(repo_name: str):
+    """Initialize / ensure local folder contains a git repository."""
     if not os.path.exists(repo_name):
         os.makedirs(repo_name)
-    subprocess.run(["git", "init"], cwd=repo_name)
+
+    # initialize git repo if not present
+    if not os.path.exists(os.path.join(repo_name, ".git")):
+        subprocess.run(["git", "init"], cwd=repo_name, check=True)
+
     return repo_name
+
+
 def fill_repo(repo_name: str, file_repo_map: Dict[str, List[str]], vault_root: str = "."):
-    """
-    Fill a local repository directory with files belonging to it based on file_repo_map.
-
-    Parameters
-    ----------
-    repo_name : str
-        Local folder name of the repository (should already contain a .git/ directory)
-    file_repo_map : dict[str, list[str]]
-        Mapping of vault-relative file paths to lists of repo aliases
-    vault_root : str
-        Path to the root of the main vault (default: current directory)
-    """
+    """Replace repo contents (except .git/) with the tagged files."""
     repo_path = os.path.abspath(repo_name)
-    if not os.path.isdir(repo_path):
-        print(f"[!] Repository folder {repo_name} not found.")
-        return
 
-    # 1. Clean repository except .git/
+    # wipe working tree except .git
     for item in os.listdir(repo_path):
-        full_path = os.path.join(repo_path, item)
+        full = os.path.join(repo_path, item)
         if item == ".git":
             continue
-        if os.path.isfile(full_path):
-            os.remove(full_path)
+        if os.path.isfile(full):
+            os.remove(full)
         else:
-            shutil.rmtree(full_path)
+            shutil.rmtree(full)
 
-    # 2. Copy files that belong to this repository
-    copied_files = []
+    # copy files belonging to this repo
+    copied_files = 0
     for file_path, repos in file_repo_map.items():
         if repo_name in repos:
             src = os.path.join(vault_root, file_path)
-            dest = os.path.join(repo_path, os.path.basename(file_path))
+            dest = os.path.join(repo_path, file_path)
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             shutil.copy2(src, dest)
-            copied_files.append(file_path)
+            copied_files += 1
 
-    # 3. Stage and commit changes
-    subprocess.run(["git", "add", "-A"], cwd=repo_path)
-    subprocess.run(["git", "commit", "-m", "Automated dispatch update"], cwd=repo_path)
+    # stage + commit
+    subprocess.run(["git", "add", "-A"], cwd=repo_path, check=False)
+    subprocess.run(["git", "commit", "-m", "Automated dispatch update"], cwd=repo_path, check=False)
 
-    print(f"[i] {repo_name}: {len(copied_files)} files mirrored.")
-def create_github_repo(repo_name: str, pat: str):
-    """
-    Create a GitHub repository using GitHub CLI.
+    print(f"[i] {repo_name}: {copied_files} files included.")
 
-    Parameters
-    ----------
-    repo_name : str
-        Name of the repository to create
-    pat : str
-        Personal Access Token with repo creation permissions
-    """
-    env = os.environ.copy()
-    env["GITHUB_TOKEN"] = pat
-    result = subprocess.run(
-        ["gh", "repo", "create", repo_name, "--public", "--confirm"],
-        env=env,
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        print(f"[!] Failed to create GitHub repo {repo_name}: {result.stderr.strip()}")
-        return False
-    print(f"[✓] GitHub repo {repo_name} created successfully.")
-    return True
+
 def dispatch(vault_root: str = "."):
-    """
-    Orchestrate full dispatch process:
-    - Parse tag_map.yaml to load repos and tag mappings
-    - Build file -> repo mapping
-    - Create local git repos (if missing)
-    - Fill each repo with its relevant files
-    - Push to remote (using --mirror)
-    """
-
-    # 1. Parse tag_map.yaml
+    # Load tag mappings
     repos, tag_to_repo = parse_tag_map()
-    if not repos:
-        print("[!] No repositories found in tag_map.yaml. Exiting.")
-        sys.exit(1)
-    if not tag_to_repo:
-        print("[!] No tag mappings found in tag_map.yaml. Exiting.")
-        sys.exit(0)
-    print(f"[i] Loaded {len(repos)} repos and {len(tag_to_repo)} tags from tag_map.yaml.")
-
-    # 2. Build file->repo mapping
-    print("[i] Building file-to-repo mapping...")
     file_repo_map = build_file_repo_dict_map(vault_root, tag_to_repo)
 
-    print(f"[i] Found {len(file_repo_map)} tagged files.")
+    print(f"[i] Managing {len(repos)} repositories.")
 
-    # 3. Process each repo
-    for alias, url in repos.items():
-        print(f"\n[>] Processing {alias} ({url})")
+    for alias, remote_repo in repos.items():
+        print(f"\n[>] Processing {alias} ({remote_repo})")
 
-        # Create local repo folder if needed
-        local_repo = create_git_repo(url)
+        # local repo folder name = alias
+        local_repo = create_local_repo(alias)
 
-        # Fill repo with relevant files
+        # ensure remote repo exists and is PRUPLE-managed
+        create_if_not_exists(remote_repo)
+        ensure_pruple_managed(remote_repo)
+
+        # fill local repo contents
         fill_repo(local_repo, file_repo_map, vault_root=vault_root)
 
-        # 4. Push with --mirror
-        print(f"[>] Pushing {alias} to remote...")
-        subprocess.run(["git", "remote", "add", "origin", url], cwd=local_repo, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(["git", "push", "--mirror", url], cwd=local_repo)
-        print(f"[✓] {alias} updated successfully.")
+        # push mirror to remote
+        print(f"[>] Pushing mirror...")
+        push_mirror(local_repo, remote_repo)
+
+        print(f"[✓] {alias} synchronized.")
 
 
-if __name__=='__main__':
+if __name__ == "__main__":
     dispatch()
