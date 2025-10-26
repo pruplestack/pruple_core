@@ -3,7 +3,7 @@
 import subprocess
 import json
 import os
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = os.getenv("GH_PAT")
 if not GITHUB_TOKEN:
     raise EnvironmentError("GITHUB_TOKEN environment variable not set")
 def run_gh(*args: str) -> str:
