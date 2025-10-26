@@ -79,8 +79,16 @@ def build_file_repo_dict_map(base_dir: str, tag_to_repo: Dict[str, List[str]]) -
         for file in files:
             if file == os.path.basename(__file__):
                 continue  # Skip the parser script itself
+            #skip hidden files , especially .git
+            if file.startswith('.'):
+                continue
+            
             file_path = os.path.join(root, file)
-            tags = list_tags_in_file(file_path, tag_to_repo)
+            try:
+                tags = list_tags_in_file(file_path, tag_to_repo)
+            except Exception as e:  # binary files or read errors
+                print(f"[!] Error processing {file_path}: {e}")
+                continue
             target_repos = set()
             for tag in tags:
                 if tag in tag_to_repo:
