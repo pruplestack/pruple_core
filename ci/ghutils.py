@@ -53,7 +53,16 @@ def create_if_not_exists(repo: str, public: bool = True, create_in_user_space: b
     run_gh("repo", "create", repo, visibility, "--confirm")
     set_description(repo, "Created by PRUPLE's ghutils.py")
     return True
-
+def ensure_pruple_managed(repo: str) -> None:
+    """Ensure the repository description indicates it is managed by PRUPLE."""
+    description = get_description(repo)
+    marker = "Managed by PRUPLE"
+    if marker not in description:
+        if description:
+            description += " | "
+        description += marker
+        set_description(repo, description)
+    return None
 
 def push_mirror_if_target_description_matches(local_repo_path: str, target_repo: str, match_text: str) -> bool:
     """
