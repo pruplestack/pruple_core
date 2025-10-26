@@ -87,3 +87,14 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
         check=True
     )
     return True
+#push_mirror is an alias for push_mirror_if_target_description_matches with match_text preset
+def push_mirror(local_repo_path: str, target_repo: str) -> bool:
+    """
+    Mirror-push the local repository to target_repo if the target repo is PRUPLE-managed.
+
+    local_repo_path: local git repository path
+    target_repo:     GitHub repo in the form "owner/name"
+
+    Returns True if push occurred, False otherwise.
+    """
+    return push_mirror_if_target_description_matches(local_repo_path, target_repo, "Managed by PRUPLE")
