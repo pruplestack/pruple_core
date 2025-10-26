@@ -1,14 +1,14 @@
 repos:
   repo1:
-    url: "https://github.com/user/repo1"
+    url: "https://github.com/pruplestack/repo1"
   repo2:
-    url: "https://github.com/user/repo2"
+    url: "https://github.com/pruplestack/repo2"
   repo3:
-    url: "https://github.com/user/repo3"
+    url: "https://github.com/pruplestack/repo3"
   repo4:
-    url: "https://github.com/user/repo4"
+    url: "https://github.com/pruplestack/repo4"
   repo5:
-    url: "https://github.com/user/repo5"
+    url: "https://github.com/pruplestack/repo5"
 
 tag_map:
   - repo1: ["tag1", "tag2"]
@@ -16,3 +16,4 @@ tag_map:
   - repo3: ["tag5", "tag6"]
   - repo4: ["tag1", "tag3"]
   - repo5: ["tag2", "tag4"]
+
