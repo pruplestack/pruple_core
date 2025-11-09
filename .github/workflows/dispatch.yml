@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**/*.md'      # Only trigger when .md files are changed
+      - '!README.md'   # Exclude the README.md file
 
 jobs:
   mirror:
