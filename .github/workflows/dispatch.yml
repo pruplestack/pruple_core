@@ -1,3 +1,4 @@
+name: magic
 on:
   push:
     branches:
