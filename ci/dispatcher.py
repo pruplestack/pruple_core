@@ -25,12 +25,9 @@ def create_local_repo(repo_name: str):
 def fill_repo(repo_name: str, file_repo_map: Dict[str, List[str]], vault_root: str = "."):
     """Replace repo contents (except .git/) with the tagged files."""
     repo_path = os.path.abspath(repo_name)
-
-    # wipe working tree except .git
+    #wipe the directory
     for item in os.listdir(repo_path):
         full = os.path.join(repo_path, item)
-        if item == ".git":
-            continue
         if os.path.isfile(full):
             os.remove(full)
         else:
