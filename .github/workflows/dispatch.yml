@@ -1,13 +1,11 @@
-name: magic
-
 on:
   push:
     branches:
       - main
     paths:
-      - '**/*.md'      # Only trigger when .md files are changed
-      - '!README.md'   # Exclude the README.md file
-
+      - '**/*.md'
+      - '!README.md'
+  workflow_dispatch:
 jobs:
   mirror:
     runs-on: ubuntu-latest
