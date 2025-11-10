@@ -2,3 +2,10 @@ name: noop
 
 on:
   workflow_dispatch:
+
+jobs:
+  skipped:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "You will never see this."
