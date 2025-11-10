@@ -6,7 +6,9 @@ from typing import Dict, List
 # -----------------------------------------------------------
 # 1. YAML Parsing
 # -----------------------------------------------------------
-def parse_tag_map(path: str = os.path.join(os.path.dirname(os.path.dirname(__file__), "ci/tag_map.yaml"))) -> tuple[Dict[str, str], Dict[str, List[str]]]:
+#__file__ is pruplecore/ci/tagmap_parser.py
+#target is pruplecore/config/tag_map.yaml
+def parse_tag_map(path: str = os.path.join(os.path.dirname(__file__), "../config/tag_map.yaml")) -> tuple[Dict[str, str], Dict[str, List[str]]]:
     """
     Parse tag_map.yaml and return:
       repos       → {repo_alias: repo_url}
@@ -115,4 +117,3 @@ if __name__ == "__main__":
     print("\nTag → Repo mapping:")
     for tag, repos in tag_to_repo.items():
         print(f"  {tag}: {repos}")
-
