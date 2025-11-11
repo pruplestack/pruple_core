@@ -92,6 +92,7 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
         ["git", "-C", local_repo_path, "remote", "add", "pruple-mirror", remote_url],
         check=True
     )
+    subprocess.run(["gh", "auth", "setup-git"], check=True)
 
     print(f"[>] Pushing mirror to {safe_remote} ...")
     result = subprocess.run(
