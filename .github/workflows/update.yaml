@@ -1,11 +1,67 @@
-name: noop
+name: Update Fork
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
-  skipped:
-    if: false
-    runs-on: ubuntu-latest
+  sync:
+    runs-on: alpine/latest
+
     steps:
-      - run: echo "You will never see this."
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/pruplestack/pruplecore.git
+          git fetch upstream main
+
+      - name: Create sync branch
+        run: |
+          git checkout -B sync-upstream upstream/main
+
+      - name: Copy updated files
+        run: |
+          # Copy all upstream files into the working tree but keep local .md files
+          # and never delete local-only files
+          mkdir ../tmp-upstream
+          git --work-tree=../tmp-upstream checkout upstream/main -- .
+
+          # Now re-sync from upstream (excluding MD files except README)
+          rsync -av --exclude='.git' \
+                   --exclude='*.md' \
+                   --include='README.md' \
+                   ../tmp-upstream/ ./
+
+      - name: Detect removal markers
+        run: |
+          # Remove files marked for deletion by .remove files
+          find . -type f -name "*.remove" | while read marker; do
+            target="${marker%.remove}"
+            if [ -f "$target" ]; then
+              echo "Removing marked file: $target"
+              rm -f "$target"
+            fi
+            rm -f "$marker"
+          done
+
+      - name: Commit and push if there are changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.PRUPLE_KEY_TO_THOUGHTS }}
+        run: |
+          git config user.name "pruple-bot"
+          git config user.email "pruple-bot@example.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync with upstream pruplecore"
+            git push origin HEAD:main
+          else
+            echo "No changes detected. Skipping commit."
+          fi
+      - name: Clean up
+        run: |
+          rm -rf ../tmp-upstream
+          git checkout main
+          git branch -D sync-upstream
+          git remote remove upstream
