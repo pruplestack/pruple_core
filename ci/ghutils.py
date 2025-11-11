@@ -1,11 +1,27 @@
-# ghutils.py
-
 import subprocess
 import json
 import os
-GITHUB_TOKEN = os.getenv("GH_PAT")
+
+# ---------------------------------------------------------------------
+#  Configuration and Token Setup
+# ---------------------------------------------------------------------
+GITHUB_TOKEN = os.getenv("PRUPLEPAT")
 if not GITHUB_TOKEN:
-    raise EnvironmentError("GITHUB_TOKEN environment variable not set")
+    raise EnvironmentError("PRUPLEPAT environment variable not set")
+
+# Ensure gh is authenticated using the same token
+subprocess.run(
+    ["gh", "auth", "login", "--with-token"],
+    input=f"{GITHUB_TOKEN}\n",
+    text=True,
+    check=True
+)
+subprocess.run(["gh", "auth", "setup-git"], check=True)
+
+
+# ---------------------------------------------------------------------
+#  Utility Functions
+# ---------------------------------------------------------------------
 def run_gh(*args: str) -> str:
     """Run a GitHub CLI command and return stdout. Throw on error."""
     result = subprocess.run(["gh", *args], capture_output=True, text=True)
@@ -34,9 +50,11 @@ def description_contains(repo: str, text: str) -> bool:
     """Return True if the repository description contains the given text."""
     return text in get_description(repo)
 
+
 def set_description(repo: str, description: str) -> None:
     """Set the repository description."""
     run_gh("repo", "edit", repo, "--description", description)
+
 
 def create_if_not_exists(repo: str, public: bool = True, create_in_user_space: bool = False) -> bool:
     """
@@ -45,7 +63,8 @@ def create_if_not_exists(repo: str, public: bool = True, create_in_user_space: b
     """
     if not create_in_user_space:
         if "/" not in repo:
-            raise ValueError("Repository name must be in the form 'organization/name' when create_in_user_space is False")
+            raise ValueError("Repository name must be 'organization/name' when create_in_user_space=False")
+
     if repository_exists(repo):
         return False
 
@@ -53,6 +72,8 @@ def create_if_not_exists(repo: str, public: bool = True, create_in_user_space: b
     run_gh("repo", "create", repo, visibility)
     set_description(repo, "Created by PRUPLE's ghutils.py")
     return True
+
+
 def ensure_pruple_managed(repo: str) -> None:
     """Ensure the repository description indicates it is managed by PRUPLE."""
     description = get_description(repo)
@@ -62,8 +83,11 @@ def ensure_pruple_managed(repo: str) -> None:
             description += " | "
         description += marker
         set_description(repo, description)
-    return None
 
+
+# ---------------------------------------------------------------------
+#  Push Function
+# ---------------------------------------------------------------------
 def push_mirror_if_target_description_matches(local_repo_path: str, target_repo: str, match_text: str) -> bool:
     """
     Mirror-push the local repository to target_repo if the target repo's description contains match_text.
@@ -83,7 +107,7 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
     remote_url = f"https://x-access-token:{GITHUB_TOKEN}@github.com/{target_repo}.git"
     safe_remote = f"https://x-access-token:*****@github.com/{target_repo}.git"
 
-    # Ensure the remote exists and points to the correct URL
+    # Clean remote, re-add fresh one
     subprocess.run(
         ["git", "-C", local_repo_path, "remote", "remove", "pruple-mirror"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -92,7 +116,6 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
         ["git", "-C", local_repo_path, "remote", "add", "pruple-mirror", remote_url],
         check=True
     )
-    subprocess.run(["gh", "auth", "setup-git"], check=True)
 
     print(f"[>] Pushing mirror to {safe_remote} ...")
     result = subprocess.run(
@@ -102,7 +125,6 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
     )
 
     if result.returncode != 0:
-        # Redact token if it somehow appears
         stderr = result.stderr.replace(GITHUB_TOKEN, "*****")
         stdout = result.stdout.replace(GITHUB_TOKEN, "*****")
         print(f"[!] Push failed with code {result.returncode}")
@@ -113,14 +135,7 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
     print("[✓] Mirror push successful.")
     return True
 
-#push_mirror is an alias for push_mirror_if_target_description_matches with match_text preset
+
 def push_mirror(local_repo_path: str, target_repo: str) -> bool:
-    """
-    Mirror-push the local repository to target_repo if the target repo is PRUPLE-managed.
-
-    local_repo_path: local git repository path
-    target_repo:     GitHub repo in the form "owner/name"
-
-    Returns True if push occurred, False otherwise.
-    """
+    """Alias for push_mirror_if_target_description_matches with 'Managed by PRUPLE'."""
     return push_mirror_if_target_description_matches(local_repo_path, target_repo, "Managed by PRUPLE")
