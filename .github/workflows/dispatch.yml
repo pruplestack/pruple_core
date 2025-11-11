@@ -30,6 +30,7 @@ jobs:
         env:
           GH_PAT: ${{ secrets.PRUPLE_KEY_TO_THOUGHTS }}
           GH_TOKEN: ${{ secrets.PRUPLE_KEY_TO_THOUGHTS }}
+          PRUPLEPAT: ${{ secrets.PRUPLE_KEY_TO_THOUGHTS }}
         run: |
           git config --global user.name "pruple-bot"
           git config --global user.email "pruple-bot@example.com"
