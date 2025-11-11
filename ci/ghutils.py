@@ -74,20 +74,44 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
 
     Returns True if push occurred, False otherwise.
     """
-    # Ensure target exists before checking description
     create_if_not_exists(target_repo)
 
     if not description_contains(target_repo, match_text):
+        print(f"[!] Skipping push: target repo '{target_repo}' is not PRUPLE-managed.")
         return False
 
-    # Perform mirror push using git and the token-authenticated URL
     remote_url = f"https://x-access-token:{GITHUB_TOKEN}@github.com/{target_repo}.git"
+    safe_remote = f"https://x-access-token:*****@github.com/{target_repo}.git"
 
+    # Ensure the remote exists and points to the correct URL
     subprocess.run(
-        ["git", "-C", local_repo_path, "push", "--mirror", remote_url],
+        ["git", "-C", local_repo_path, "remote", "remove", "pruple-mirror"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    subprocess.run(
+        ["git", "-C", local_repo_path, "remote", "add", "pruple-mirror", remote_url],
         check=True
     )
+
+    print(f"[>] Pushing mirror to {safe_remote} ...")
+    result = subprocess.run(
+        ["git", "-C", local_repo_path, "push", "--mirror", "pruple-mirror"],
+        text=True,
+        capture_output=True
+    )
+
+    if result.returncode != 0:
+        # Redact token if it somehow appears
+        stderr = result.stderr.replace(GITHUB_TOKEN, "*****")
+        stdout = result.stdout.replace(GITHUB_TOKEN, "*****")
+        print(f"[!] Push failed with code {result.returncode}")
+        print(stdout)
+        print(stderr)
+        raise subprocess.CalledProcessError(result.returncode, result.args, output=stdout, stderr=stderr)
+
+    print("[✓] Mirror push successful.")
     return True
+
 #push_mirror is an alias for push_mirror_if_target_description_matches with match_text preset
 def push_mirror(local_repo_path: str, target_repo: str) -> bool:
     """
