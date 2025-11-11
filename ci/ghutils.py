@@ -81,7 +81,8 @@ def push_mirror_if_target_description_matches(local_repo_path: str, target_repo:
         return False
 
     # Perform mirror push using git and the token-authenticated URL
-    remote_url = f"https://{GITHUB_TOKEN}:x-oauth-basic@github.com/{target_repo}.git"
+    remote_url = f"https://x-access-token:{GITHUB_TOKEN}@github.com/{target_repo}.git"
+
     subprocess.run(
         ["git", "-C", local_repo_path, "push", "--mirror", remote_url],
         check=True
