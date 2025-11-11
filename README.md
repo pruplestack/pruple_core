@@ -44,7 +44,7 @@ Keep this token private as it grants access to your GitHub account and can be ab
 #### 4. Add the Token as a Repository Secret
 
 In your fork of `pruple_core`, go to **Settings → Secrets and variables → Actions → New repository secret**.
-Create a secret named **`PRUPLE_GITHUB_TOKEN`** and paste the token value.
+Create a secret named **`PRUPLE_KEY_TO_THOUGHTS`** and paste the token value.
 
 As long as it stays within repository secrets, it is safe unless you modify the workflows to expose it.
 
