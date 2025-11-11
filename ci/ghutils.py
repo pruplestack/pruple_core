@@ -15,7 +15,7 @@ os.environ.pop("GITHUB_TOKEN", None)
 # Authenticate gh manually with your own token
 subprocess.run(
     ["gh", "auth", "login", "--with-token"],
-    input=f"{GITHUB_TOKEN}\n",
+    input=GITHUB_TOKEN.encode(),
     text=True,
     check=True
 )
