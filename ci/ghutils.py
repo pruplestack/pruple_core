@@ -10,7 +10,7 @@ if not GITHUB_TOKEN:
     raise EnvironmentError("PRUPLEPAT environment variable not set")
 
 # Remove the default GitHub Actions token so gh won't auto-auth as the bot
-os.environ.pop("GITHUB_TOKEN", None)
+os.environ.pop("GH_TOKEN", None)
 
 # Authenticate gh manually with your PAT
 proc = subprocess.run(
